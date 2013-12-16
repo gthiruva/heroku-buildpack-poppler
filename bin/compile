@@ -8,7 +8,7 @@ set -e
 BUILD_DIR=$1
 CACHE_DIR=$2
 
-# debug
+# debugm
 # set -x
 echo "-----> We are in '$PWD' with contents:"
 ls -a
@@ -70,7 +70,7 @@ cd poppler-0.24.4
 cd $BUILD_DIR/libpoppler/poppler-1.12.16
 #./autogen.sh --prefix=$VENDORED_LIBPOPPLER
 CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./autogen.sh --with-pic --enable-static --disable-shared --prefix=$VENDORED_LIBPOPPLER
-make
+make -j5
 make install
 export PATH="$VENDORED_LIBPOPPLER/bin:$PATH"
 export LD_RUN_PATH="$VENDORED_LIBPOPPLER/lib:$LD_RUN_PATH"
