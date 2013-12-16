@@ -33,7 +33,7 @@ cd $BUILD_DIR
 curl -OL 'http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.11.0.tar.bz2'
 tar xjf fontconfig-2.11.0.tar.bz2
 cd fontconfig-2.11.0
-./configure --prefix=$VENDORED_FONTCONFIG --disable-docs
+CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./configure --with-pic --enable-static --disable-shared --prefix=$VENDORED_FONTCONFIG --disable-docs
 make -j5
 make install
 export PATH="$VENDORED_FONTCONFIG/bin:$PATH"
@@ -43,6 +43,7 @@ export PKG_CONFIG_PATH="$VENDORED_FONTCONFIG/lib/pkgconfig:/usr/local/lib/pkgcon
 cd ..
 ### End fontconfig stuff
 
+#Building libpoppler
 if [[ "Darwin" == "$(uname)" ]]
 then
     VENDORED_LIBPOPPLER="$HOME/Code/heroku-buildpack-libpoppler/vendor/libpoppler" # Just for my local laptop testing
@@ -50,33 +51,19 @@ else
     VENDORED_LIBPOPPLER="/app/vendor/libpoppler"
 fi
 
-# parse and derive params
-BUILD_DIR=$1
-CACHE_DIR=$2
-
-function tar_download() {
-  url="$1"
-  location="$2"
-
-  mkdir -p $location
-  curl $url -s -o - | tar xJf - -C $location
-}
-
-#Building libpoppler
 echo "-----> Building libpoppler ... BUILD_DIR: $BUILD_DIR // CACHE_DIR: $CACHE_DIR // PWD: $PWD"
 curl -OL 'http://poppler.freedesktop.org/poppler-0.24.4.tar.xz'
 tar xJf poppler-0.24.4.tar.xz
 cd poppler-0.24.4
-cd $BUILD_DIR/libpoppler/poppler-1.12.16
 #./autogen.sh --prefix=$VENDORED_LIBPOPPLER
-CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./autogen.sh --with-pic --enable-static --disable-shared --prefix=$VENDORED_LIBPOPPLER
+CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./configure --with-pic --enable-static --disable-shared --prefix=$VENDORED_LIBPOPPLER
 make -j5
 make install
 export PATH="$VENDORED_LIBPOPPLER/bin:$PATH"
 export LD_RUN_PATH="$VENDORED_LIBPOPPLER/lib:$LD_RUN_PATH"
 export LD_LIBRARY_PATH="$LD_RUN_PATH"
 export PKG_CONFIG_PATH="$VENDORED_LIBPOPPLER/lib/pkgconfig:$PKG_CONFIG_PATH"
-cd ../..
+cd ..
 
 echo "-----> Building runtime environment"
 mkdir -p .profile.d
