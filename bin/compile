@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# bin/compile <build-dir> <cache-dir>
+
+# fail fast
+set -e
+
+# parse and derive params
+BUILD_DIR=$1
+CACHE_DIR=$2
+
+# debug
+# set -x
+echo "-----> We are in '$PWD' with contents:"
+ls -a
+echo "-----> Present PATH's:"
+echo "PATH: '$PATH'"
+echo "LD_RUN_PATH: '$LD_RUN_PATH'"
+echo "LD_LIBRARY_PATH: '$LD_LIBRARY_PATH'"
+echo "PKG_CONFIG_PATH: '$PKG_CONFIG_PATH'"
+
+# clean up leaking environment
+unset GIT_DIR
+
+### fontconfig is required for libpoppler
+if [[ "Darwin" == "$(uname)" ]]
+then
+    VENDORED_FONTCONFIG="$HOME/Code/heroku-buildpack-fontconfig/vendor/fontconfig" # Just for my local laptop testing
+else
+    VENDORED_FONTCONFIG="/app/vendor/fontconfig"
+fi
+
+cd $BUILD_DIR
+curl -OL 'http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.11.0.tar.bz2'
+tar xjf fontconfig-2.11.0.tar.bz2
+cd fontconfig-2.11.0
+./configure --prefix=$VENDORED_FONTCONFIG --disable-docs
+make -j5
+make install
+export PATH="$VENDORED_FONTCONFIG/bin:$PATH"
+export LD_RUN_PATH="$VENDORED_FONTCONFIG/lib:/usr/local/lib:/usr/lib:/lib:$LD_RUN_PATH"
+export LD_LIBRARY_PATH="$LD_RUN_PATH"
+export PKG_CONFIG_PATH="$VENDORED_FONTCONFIG/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/lib/pkgconfig:$PKG_CONFIG_PATH"
+cd ..
+### End fontconfig stuff
+
+if [[ "Darwin" == "$(uname)" ]]
+then
+    VENDORED_LIBPOPPLER="$HOME/Code/heroku-buildpack-libpoppler/vendor/libpoppler" # Just for my local laptop testing
+else
+    VENDORED_LIBPOPPLER="/app/vendor/libpoppler"
+fi
+
+# parse and derive params
+BUILD_DIR=$1
+CACHE_DIR=$2
+
+function tar_download() {
+  url="$1"
+  location="$2"
+
+  mkdir -p $location
+  curl $url -s -o - | tar xJf - -C $location
+}
+
+#Building libpoppler
+echo "-----> Building libpoppler ... BUILD_DIR: $BUILD_DIR // CACHE_DIR: $CACHE_DIR // PWD: $PWD"
+curl -OL 'http://poppler.freedesktop.org/poppler-0.24.4.tar.xz'
+tar xJf poppler-0.24.4.tar.xz
+cd poppler-0.24.4
+cd $BUILD_DIR/libpoppler/poppler-1.12.16
+#./autogen.sh --prefix=$VENDORED_LIBPOPPLER
+CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./autogen.sh --with-pic --enable-static --disable-shared --prefix=$VENDORED_LIBPOPPLER
+make
+make install
+export PATH="$VENDORED_LIBPOPPLER/bin:$PATH"
+export LD_RUN_PATH="$VENDORED_LIBPOPPLER/lib:$LD_RUN_PATH"
+export LD_LIBRARY_PATH="$LD_RUN_PATH"
+export PKG_CONFIG_PATH="$VENDORED_LIBPOPPLER/lib/pkgconfig:$PKG_CONFIG_PATH"
+cd ../..
+
+echo "-----> Building runtime environment"
+mkdir -p .profile.d
+echo "export PATH=\"\$HOME/vendor/fontconfig/bin:\$HOME/vendor/libpoppler/bin:\$PATH\"" > .profile.d/libpoppler.sh
+echo "export LD_RUN_PATH=\"\$HOME/vendor/fontconfig/lib:\$HOME/vendor/libpoppler/lib:\$LD_RUN_PATH\"" > .profile.d/libpoppler.sh
+echo "export LD_LIBRARY_PATH=\"\$HOME/vendor/fontconfig/lib:\$HOME/vendor/libpoppler/lib:\$LD_LIBRARY_PATH\"" > .profile.d/libpoppler.sh
+echo "export PKG_CONFIG_PATH=\"\$HOME/vendor/fontconfig/lib/pkgconfig:\$HOME/vendor/libpoppler/lib/pkgconfig:\$PKG_CONFIG_PATH\"" >> .profile.d/libpoppler.sh
