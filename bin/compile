@@ -10,9 +10,12 @@ CACHE_DIR=$2
 
 # debugm
 # set -x
-echo "-----> We are in '$PWD' with contents:"
+echo "-----> We are building libpixman and lippoppler in '$PWD' with contents:"
 ls -a
 echo "-----> Present PATH's:"
+echo "HOME: '$HOME'"
+echo "BUILD_DIR: '$BUILD_DIR'"
+echo "CACHE_DIR: '$CACHE_DIR'"
 echo "PATH: '$PATH'"
 echo "LD_RUN_PATH: '$LD_RUN_PATH'"
 echo "LD_LIBRARY_PATH: '$LD_LIBRARY_PATH'"
@@ -40,7 +43,6 @@ export PATH="$VENDORED_FONTCONFIG/bin:$PATH"
 export LD_RUN_PATH="$VENDORED_FONTCONFIG/lib:/usr/local/lib:/usr/lib:/lib:$LD_RUN_PATH"
 export LD_LIBRARY_PATH="$LD_RUN_PATH"
 export PKG_CONFIG_PATH="$VENDORED_FONTCONFIG/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/lib/pkgconfig:$PKG_CONFIG_PATH"
-cd ..
 ### End fontconfig stuff
 
 #Building libpoppler
@@ -52,6 +54,7 @@ else
 fi
 
 echo "-----> Building libpoppler ... BUILD_DIR: $BUILD_DIR // CACHE_DIR: $CACHE_DIR // PWD: $PWD"
+cd $BUILD_DIR
 curl -OL 'http://poppler.freedesktop.org/poppler-0.24.4.tar.xz'
 tar xJf poppler-0.24.4.tar.xz
 cd poppler-0.24.4
@@ -63,11 +66,14 @@ export PATH="$VENDORED_LIBPOPPLER/bin:$PATH"
 export LD_RUN_PATH="$VENDORED_LIBPOPPLER/lib:$LD_RUN_PATH"
 export LD_LIBRARY_PATH="$LD_RUN_PATH"
 export PKG_CONFIG_PATH="$VENDORED_LIBPOPPLER/lib/pkgconfig:$PKG_CONFIG_PATH"
-cd ..
 
 echo "-----> Building runtime environment"
+cd /app
 mkdir -p .profile.d
-echo "export PATH=\"\$HOME/vendor/fontconfig/bin:\$HOME/vendor/libpoppler/bin:\$PATH\"" > .profile.d/libpoppler.sh
-echo "export LD_RUN_PATH=\"\$HOME/vendor/fontconfig/lib:\$HOME/vendor/libpoppler/lib:\$LD_RUN_PATH\"" > .profile.d/libpoppler.sh
-echo "export LD_LIBRARY_PATH=\"\$HOME/vendor/fontconfig/lib:\$HOME/vendor/libpoppler/lib:\$LD_LIBRARY_PATH\"" > .profile.d/libpoppler.sh
-echo "export PKG_CONFIG_PATH=\"\$HOME/vendor/fontconfig/lib/pkgconfig:\$HOME/vendor/libpoppler/lib/pkgconfig:\$PKG_CONFIG_PATH\"" >> .profile.d/libpoppler.sh
+echo "export VENDORED_FONTCONFIG=\"$VENDORED_FONTCONFIG\"" > .profile.d/libpoppler.sh
+echo "export VENDORED_LIBPOPPLER=\"$VENDORED_LIBPOPPLER\"" >> .profile.d/libpoppler.sh
+echo "export PATH=\"\$VENDORED_FONTCONFIG/bin:\$VENDORED_LIBPOPPLER/bin:\$PATH\"" >> .profile.d/libpoppler.sh
+echo "export LD_RUN_PATH=\"\$VENDORED_FONTCONFIG/lib:\$VENDORED_LIBPOPPLER/lib:\$LD_RUN_PATH\"" >> .profile.d/libpoppler.sh
+echo "export LD_LIBRARY_PATH=\"\$VENDORED_FONTCONFIG/lib:\$VENDORED_LIBPOPPLER/lib:\$LD_LIBRARY_PATH\"" >> .profile.d/libpoppler.sh
+echo "export PKG_CONFIG_PATH=\"\$VENDORED_FONTCONFIG/lib/pkgconfig:\$VENDORED_LIBPOPPLER/lib/pkgconfig:\$PKG_CONFIG_PATH\"" >> .profile.d/libpoppler.sh
+cat .profile.d/libpoppler.sh
