@@ -68,7 +68,7 @@ export LD_LIBRARY_PATH="$LD_RUN_PATH"
 export PKG_CONFIG_PATH="$VENDORED_LIBPOPPLER/lib/pkgconfig:$PKG_CONFIG_PATH"
 
 echo "-----> Building runtime environment"
-cd /app
+cd $BUILD_DIR
 mkdir -p .profile.d
 echo "export VENDORED_FONTCONFIG=\"$VENDORED_FONTCONFIG\"" > .profile.d/libpoppler.sh
 echo "export VENDORED_LIBPOPPLER=\"$VENDORED_LIBPOPPLER\"" >> .profile.d/libpoppler.sh
