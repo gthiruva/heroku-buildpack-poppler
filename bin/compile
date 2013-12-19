@@ -21,6 +21,42 @@ echo "LD_RUN_PATH: '$LD_RUN_PATH'"
 echo "LD_LIBRARY_PATH: '$LD_LIBRARY_PATH'"
 echo "PKG_CONFIG_PATH: '$PKG_CONFIG_PATH'"
 
+### glib is required for libpoppler
+if [[ "Darwin" == "$(uname)" ]]
+then
+  VENDORED_GLIB="$HOME/Code/heroku-buildpack-glib/vendor/glib" # Just for my local laptop testing
+else
+  VENDORED_GLIB="/app/vendor/glib"
+fi
+
+# fetch and cache the source tar ball
+GLIB_PACKAGE="http://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.2.tar.xz"
+GLIB_PACKAGE_ETAG=$(curl -s --head "$GLIB_PACKAGE" | grep -Ei '^etag' | sed -r 's/^etag|[^a-zA-Z0-9]+//gi')
+GLIB_CACHE="$CACHE_DIR/glib_$GLIB_PACKAGE_ETAG";
+GLIB_DIRNAME="glib-2.38.2"
+
+if [ -d "$GLIB_CACHE" ]; then
+  echo "-----> Reusing cached glib ($GLIB_PACKAGE_ETAG)"
+  cp -a $GLIB_CACHE $VENDORED_GLIB
+else
+  echo "-----> Fetching and caching glib ($GLIB_PACKAGE_ETAG)"
+  mkdir -p $VENDORED_GLIB
+  curl $GLIB_PACKAGE -o - | tar xJf - -C $VENDORED_GLIB
+  mkdir -p $CACHE_DIR
+  cp -a $VENDORED_GLIB $GLIB_CACHE
+fi
+
+cd $VENDORED_GLIB/$GLIB_DIRNAME
+CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./configure --prefix=$VENDORED_GLIB --with-pic --enable-static --disable-shared
+make -j5
+make install
+cd ..
+rm -fr $GLIB_DIRNAME
+export LD_RUN_PATH="$VENDORED_GLIB/lib:$LD_RUN_PATH"
+export LD_LIBRARY_PATH="$LD_RUN_PATH"
+export PKG_CONFIG_PATH="$VENDORED_GLIB/lib/pkgconfig:$PKG_CONFIG_PATH"
+### End glib stuff
+
 ### libgdkpixbuf is required for libcairo
 if [[ "Darwin" == "$(uname)" ]]
 then
