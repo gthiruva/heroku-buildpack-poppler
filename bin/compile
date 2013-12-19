@@ -168,11 +168,12 @@ export PKG_CONFIG_PATH="$VENDORED_LIBPOPPLER/lib/pkgconfig:$PKG_CONFIG_PATH"
 echo "-----> Building runtime environment"
 cd $BUILD_DIR
 mkdir -p .profile.d
-echo "export VENDORED_FONTCONFIG=\"$VENDORED_FONTCONFIG\"" > .profile.d/libpoppler.sh
+echo "export VENDORED_GLIB=\"\$VENDORED_GLIB\"" > .profile.d/libpoppler.sh
+echo "export VENDORED_FONTCONFIG=\"$VENDORED_FONTCONFIG\"" >> .profile.d/libpoppler.sh
 echo "export VENDORED_LIBGDKPIXBUF=\"$VENDORED_LIBGDKPIXBUF\"" >> .profile.d/libpoppler.sh
 echo "export VENDORED_LIBPOPPLER=\"$VENDORED_LIBPOPPLER\"" >> .profile.d/libpoppler.sh
-echo "export PATH=\"\$VENDORED_LIBGDKPIXBUF/bin:\$VENDORED_FONTCONFIG/bin:\$VENDORED_LIBPOPPLER/bin:\$PATH\"" >> .profile.d/libpoppler.sh
-echo "export LD_RUN_PATH=\"\$VENDORED_LIBGDKPIXBUF/lib:\$VENDORED_FONTCONFIG/lib:\$VENDORED_LIBPOPPLER/lib:\$LD_RUN_PATH\"" >> .profile.d/libpoppler.sh
-echo "export LD_LIBRARY_PATH=\"\$VENDORED_LIBGDKPIXBUF/lib:\$VENDORED_FONTCONFIG/lib:\$VENDORED_LIBPOPPLER/lib:\$LD_LIBRARY_PATH\"" >> .profile.d/libpoppler.sh
-echo "export PKG_CONFIG_PATH=\"\$VENDORED_LIBGDKPIXBUF/lib/pkgconfig:\$VENDORED_FONTCONFIG/lib/pkgconfig:\$VENDORED_LIBPOPPLER/lib/pkgconfig:\$PKG_CONFIG_PATH\"" >> .profile.d/libpoppler.sh
+echo "export PATH=\"\$VENDORED_GLIB/bin:\$VENDORED_LIBGDKPIXBUF/bin:\$VENDORED_FONTCONFIG/bin:\$VENDORED_LIBPOPPLER/bin:\$PATH\"" >> .profile.d/libpoppler.sh
+echo "export LD_RUN_PATH=\"\$VENDORED_GLIB/lib:\$VENDORED_LIBGDKPIXBUF/lib:\$VENDORED_FONTCONFIG/lib:\$VENDORED_LIBPOPPLER/lib:\$LD_RUN_PATH\"" >> .profile.d/libpoppler.sh
+echo "export LD_LIBRARY_PATH=\"\$VENDORED_GLIB/lib:\$VENDORED_LIBGDKPIXBUF/lib:\$VENDORED_FONTCONFIG/lib:\$VENDORED_LIBPOPPLER/lib:\$LD_LIBRARY_PATH\"" >> .profile.d/libpoppler.sh
+echo "export PKG_CONFIG_PATH=\"\$VENDORED_GLIB/lib/pkgconfig:\$VENDORED_LIBGDKPIXBUF/lib/pkgconfig:\$VENDORED_FONTCONFIG/lib/pkgconfig:\$VENDORED_LIBPOPPLER/lib/pkgconfig:\$PKG_CONFIG_PATH\"" >> .profile.d/libpoppler.sh
 cat .profile.d/libpoppler.sh
