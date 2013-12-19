@@ -41,7 +41,7 @@ if [ -d "$LIBGDKPIXBUF_CACHE" ]; then
 else
   echo "-----> Fetching and caching libgdkpixbuf ($LIBGDKPIXBUF_PACKAGE_ETAG)"
   mkdir -p $VENDORED_LIBGDKPIXBUF
-  curl $LIBGDKPIXBUF_PACKAGE -o - | tar xjf - -C $VENDORED_LIBGDKPIXBUF
+  curl $LIBGDKPIXBUF_PACKAGE -o - | tar xJf - -C $VENDORED_LIBGDKPIXBUF
   mkdir -p $CACHE_DIR
   cp -a $VENDORED_LIBGDKPIXBUF $LIBGDKPIXBUF_CACHE
 fi
@@ -113,7 +113,7 @@ if [ -d "$LIBPOPPLER_CACHE" ]; then
 else
   echo "-----> Fetching and caching libpoppler ($LIBPOPPLER_PACKAGE_ETAG)"
   mkdir -p $VENDORED_LIBPOPPLER
-  curl $LIBPOPPLER_PACKAGE -o - | tar xjf - -C $VENDORED_LIBPOPPLER
+  curl $LIBPOPPLER_PACKAGE -o - | tar xJf - -C $VENDORED_LIBPOPPLER
   mkdir -p $CACHE_DIR
   cp -a $VENDORED_LIBPOPPLER $LIBPOPPLER_CACHE
 fi
