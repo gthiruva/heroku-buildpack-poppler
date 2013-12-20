@@ -1,7 +1,4 @@
-export PATH="/app/vendor/libffi/bin:/app/vendor/glib/bin:/app/vendor/libgdkpixbuf/bin:/app/vendor/fontconfig/bin:/app/vendor/libpoppler/bin:$PATH"
-export LD_RUN_PATH="/app/vendor/libffi/lib:/app/vendor/glib/lib:/app/vendor/libgdkpixbuf/lib:/app/vendor/fontconfig/lib:/app/vendor/libpoppler/lib:$LD_RUN_PATH"
-export LD_LIBRARY_PATH="/app/vendor/libffi/lib:/app/vendor/glib/lib:/app/vendor/libgdkpixbuf/lib:/app/vendor/fontconfig/lib:/app/vendor/libpoppler/lib:$LD_LIBRARY_PATH"
-export PKG_CONFIG_PATH="/app/vendor/libffi/lib/pkgconfig:/app/vendor/glib/lib/pkgconfig:/app/vendor/libgdkpixbuf/lib/pkgconfig:/app/vendor/fontconfig/lib/pkgconfig:/app/vendor/libpoppler/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-echo "-----> /app/vendor contents:"
-ls -a /app/vendor
+export PATH="/app/vendor/local/bin:/app/vendor/libffi/bin:/app/vendor/glib/bin:/app/vendor/libgdkpixbuf/bin:/app/vendor/fontconfig/bin:/app/vendor/libpoppler/bin:$PATH"
+export LD_RUN_PATH="/app/vendor/local/lib:/app/vendor/libffi/lib:/app/vendor/glib/lib:/app/vendor/libgdkpixbuf/lib:/app/vendor/fontconfig/lib:/app/vendor/libpoppler/lib:$LD_RUN_PATH"
+export LD_LIBRARY_PATH="/app/vendor/local/lib:/app/vendor/libffi/lib:/app/vendor/glib/lib:/app/vendor/libgdkpixbuf/lib:/app/vendor/fontconfig/lib:/app/vendor/libpoppler/lib:$LD_LIBRARY_PATH"
+export PKG_CONFIG_PATH="/app/vendor/local/lib/pkgconfig:/app/vendor/libffi/lib/pkgconfig:/app/vendor/glib/lib/pkgconfig:/app/vendor/libgdkpixbuf/lib/pkgconfig:/app/vendor/fontconfig/lib/pkgconfig:/app/vendor/libpoppler/lib/pkgconfig:$PKG_CONFIG_PATH"
