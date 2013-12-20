@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # bin/compile <build-dir> <cache-dir>
 
-# fail fast
-set -e
-
 # parse and derive params
 BUILD_DIR=$1
 CACHE_DIR=$2
@@ -66,12 +63,14 @@ pkg_install()
 cIFS="$IFS"
 IFS='
 '
+
 read -r -d '' -a pkgs <<~
 gettext-0.18.3,http://ftp.gnu.org/gnu/gettext/gettext-0.18.3.tar.gz,z,--without-emacs --disable-shared
 expat-2.1.0,http://downloads.sourceforge.net/expat/expat-2.1.0.tar.gz,x,--disable-static
 pcre-8.34,http://downloads.sourceforge.net/pcre/pcre-8.34.tar.bz2,j,
 Python-2.7.6,http://www.python.org/ftp/python/2.7.6/Python-2.7.6.tar.xz,J,
 ~
+
 IFS="$cIFS"
 
 declare -i pcnt=0
@@ -89,9 +88,6 @@ do
     echo
     ((pcnt = pcnt + 1 ))
 done
-
-exit 0
-
 
 ### libffi is required for GLib
 if [[ "Darwin" == "$(uname)" ]]
