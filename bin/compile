@@ -69,6 +69,8 @@ gettext-0.18.3,http://ftp.gnu.org/gnu/gettext/gettext-0.18.3.tar.gz,z,--without-
 expat-2.1.0,http://downloads.sourceforge.net/expat/expat-2.1.0.tar.gz,x,--disable-static
 pcre-8.34,http://downloads.sourceforge.net/pcre/pcre-8.34.tar.bz2,j,
 Python-2.7.6,http://www.python.org/ftp/python/2.7.6/Python-2.7.6.tar.xz,J,
+libffi-3.0.13,ftp://sourceware.org/pub/libffi/libffi-3.0.13.tar.gz,z,--with-pic --enable-static --disable-shared
+glib-2.38.2,http://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.2.tar.xz,J,--with-pic --enable-static --disable-shared
 ~
 
 IFS="$cIFS"
@@ -88,78 +90,6 @@ do
     echo
     ((pcnt = pcnt + 1 ))
 done
-
-### libffi is required for GLib
-if [[ "Darwin" == "$(uname)" ]]
-then
-  VENDORED_LIBFFI="$HOME/Code/heroku-buildpack-libffi/vendor/libffi" # Just for my local laptop testing
-else
-  VENDORED_LIBFFI="/app/vendor/libffi"
-fi
-
-# fetch and cache the source tar ball
-LIBFFI_PACKAGE="ftp://sourceware.org/pub/libffi/libffi-3.0.13.tar.gz"
-LIBFFI_PACKAGE_ETAG=$(curl -s --head "$LIBFFI_PACKAGE" | grep -Ei '^etag' | sed -r 's/^etag|[^a-zA-Z0-9]+//gi')
-LIBFFI_CACHE="$CACHE_DIR/libffi_$LIBFFI_PACKAGE_ETAG";
-LIBFFI_DIRNAME="libffi-3.0.13"
-
-if [ -d "$LIBFFI_CACHE" ]; then
-  echo "-----> Reusing cached libffi ($LIBFFI_PACKAGE_ETAG)"
-  cp -a $LIBFFI_CACHE $VENDORED_LIBFFI
-else
-  echo "-----> Fetching and caching libffi ($LIBFFI_PACKAGE_ETAG)"
-  mkdir -p $VENDORED_LIBFFI
-  curl $LIBFFI_PACKAGE -o - | tar xzf - -C $VENDORED_LIBFFI
-  mkdir -p $CACHE_DIR
-  cp -a $VENDORED_LIBFFI $LIBFFI_CACHE
-fi
-
-cd $VENDORED_LIBFFI/$LIBFFI_DIRNAME
-CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./configure --prefix=$VENDORED_LIBFFI --with-pic --enable-static --disable-shared
-make -j5
-make install
-cd ..
-rm -fr $LIBFFI_DIRNAME
-export LD_RUN_PATH="$VENDORED_LIBFFI/lib:$LD_RUN_PATH"
-export LD_LIBRARY_PATH="$LD_RUN_PATH"
-export PKG_CONFIG_PATH="$VENDORED_LIBFFI/lib/pkgconfig:$PKG_CONFIG_PATH"
-### End libffi stuff
-
-### glib is required for libpoppler
-if [[ "Darwin" == "$(uname)" ]]
-then
-  VENDORED_GLIB="$HOME/Code/heroku-buildpack-glib/vendor/glib" # Just for my local laptop testing
-else
-  VENDORED_GLIB="/app/vendor/glib"
-fi
-
-# fetch and cache the source tar ball
-GLIB_PACKAGE="http://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.2.tar.xz"
-GLIB_PACKAGE_ETAG=$(curl -s --head "$GLIB_PACKAGE" | grep -Ei '^etag' | sed -r 's/^etag|[^a-zA-Z0-9]+//gi')
-GLIB_CACHE="$CACHE_DIR/glib_$GLIB_PACKAGE_ETAG";
-GLIB_DIRNAME="glib-2.38.2"
-
-if [ -d "$GLIB_CACHE" ]; then
-  echo "-----> Reusing cached glib ($GLIB_PACKAGE_ETAG)"
-  cp -a $GLIB_CACHE $VENDORED_GLIB
-else
-  echo "-----> Fetching and caching glib ($GLIB_PACKAGE_ETAG)"
-  mkdir -p $VENDORED_GLIB
-  curl $GLIB_PACKAGE -o - | tar xJf - -C $VENDORED_GLIB
-  mkdir -p $CACHE_DIR
-  cp -a $VENDORED_GLIB $GLIB_CACHE
-fi
-
-cd $VENDORED_GLIB/$GLIB_DIRNAME
-CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./configure --prefix=$VENDORED_GLIB --with-pic --enable-static --disable-shared
-make -j5
-make install
-cd ..
-rm -fr $GLIB_DIRNAME
-export LD_RUN_PATH="$VENDORED_GLIB/lib:$LD_RUN_PATH"
-export LD_LIBRARY_PATH="$LD_RUN_PATH"
-export PKG_CONFIG_PATH="$VENDORED_GLIB/lib/pkgconfig:$PKG_CONFIG_PATH"
-### End glib stuff
 
 ### libgdkpixbuf is required for libcairo
 if [[ "Darwin" == "$(uname)" ]]
