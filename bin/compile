@@ -1,13 +1,10 @@
-#!/usr/bin/env bash
-# bin/compile <build-dir> <cache-dir>
-
 # parse and derive params
 BUILD_DIR=$1
 CACHE_DIR=$2
 
 # debugm
 # set -x
-echo "-----> We are building libpixman and lippoppler in '$PWD' with contents:"
+echo "-----> We are building lippoppler and dependencies in '$PWD' with contents:"
 ls -a
 echo "-----> Present PATH's:"
 echo "HOME: '$HOME'"
@@ -35,7 +32,7 @@ pkg_install()
     fi
     
     # fetch and cache the source tar ball
-    etag=$(curl -s --head "$url" | grep -Ei '^etag' | sed -r 's/^etag|[^a-zA-Z0-9]+//gi')
+    etag=$(curl -L -s --head "$url" | grep -Ei '^etag' | sed -r 's/^etag|[^a-zA-Z0-9]+//gi')
     cache_dir="${cache_prefix}/${dir}_${etag}";
     
     if [ -d "$cache_dir" ]; then
@@ -44,17 +41,25 @@ pkg_install()
     else
 	echo "-----> Fetching and caching '$dir' ($etag)"
 	mkdir -p $prefix
-	curl "$url" -o - | tar xzf - -C $prefix
+	curl -L "$url" -o - | tar x${taropt}f - -C $prefix
 	mkdir -p $cache_prefix
 	cp -a $prefix $cache_dir
     fi
     
     cd $prefix/$dir
-    CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./configure --prefix=$prefix --with-pic --enable-static --disable-shared
+    CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./configure --prefix=$prefix ${config_flags}
     make -j5
     make install
     cd ..
     rm -fr $dir
+
+    echo "New present contents of '$prefix' is:"
+    ls -aFC $prefix
+    echo "New present contect of '$prefix/lib' is:"
+    ls -aFC $prefix/lib
+    echo "New present contents of '$prefix/lib/pkgconfig' is:"
+    ls -aFC $prefix/lib/pkgconfig
+
     export LD_RUN_PATH="$prefix/lib:$LD_RUN_PATH"
     export LD_LIBRARY_PATH="$LD_RUN_PATH"
     export PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
@@ -64,13 +69,16 @@ cIFS="$IFS"
 IFS='
 '
 
-read -r -d '' -a pkgs <<~
+read -r -d '' -a pkgs <<"~"
 gettext-0.18.3,http://ftp.gnu.org/gnu/gettext/gettext-0.18.3.tar.gz,z,--without-emacs --disable-shared
 expat-2.1.0,http://downloads.sourceforge.net/expat/expat-2.1.0.tar.gz,x,--disable-static
 pcre-8.34,http://downloads.sourceforge.net/pcre/pcre-8.34.tar.bz2,j,
 Python-2.7.6,http://www.python.org/ftp/python/2.7.6/Python-2.7.6.tar.xz,J,
 libffi-3.0.13,ftp://sourceware.org/pub/libffi/libffi-3.0.13.tar.gz,z,--with-pic --enable-static --disable-shared
 glib-2.38.2,http://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.2.tar.xz,J,--with-pic --enable-static --disable-shared
+gdk-pixbuf-2.30.2,http://ftp.gnome.org/pub/gnome/sources/gdk-pixbuf/2.30/gdk-pixbuf-2.30.2.tar.xz,J,--with-pic --enable-static --disable-shared
+fontconfig-2.11.0,http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.11.0.tar.bz2,j,--with-pic --enable-static --disable-shared
+poppler-0.24.4,http://poppler.freedesktop.org/poppler-0.24.4.tar.xz,J,--with-pic --enable-static --disable-shared
 ~
 
 IFS="$cIFS"
@@ -91,124 +99,11 @@ do
     ((pcnt = pcnt + 1 ))
 done
 
-### libgdkpixbuf is required for libcairo
-if [[ "Darwin" == "$(uname)" ]]
-then
-  VENDORED_LIBGDKPIXBUF="$HOME/Code/heroku-buildpack-libgdkpixbuf/vendor/libgdkpixbuf" # Just for my local laptop testing
-else
-  VENDORED_LIBGDKPIXBUF="/app/vendor/libgdkpixbuf"
-fi
-
-# fetch and cache the source tar ball
-LIBGDKPIXBUF_PACKAGE="http://ftp.gnome.org/pub/gnome/sources/gdk-pixbuf/2.30/gdk-pixbuf-2.30.2.tar.xz"
-LIBGDKPIXBUF_PACKAGE_ETAG=$(curl -s --head "$LIBGDKPIXBUF_PACKAGE" | grep -Ei '^etag' | sed -r 's/^etag|[^a-zA-Z0-9]+//gi')
-LIBGDKPIXBUF_CACHE="$CACHE_DIR/libgdkpixbuf_$LIBGDKPIXBUF_PACKAGE_ETAG";
-LIBGDKPIXBUF_DIRNAME="gdk-pixbuf-2.30.2"
-
-if [ -d "$LIBGDKPIXBUF_CACHE" ]; then
-  echo "-----> Reusing cached libgdkpixbuf ($LIBGDKPIXBUF_PACKAGE_ETAG)"
-  cp -a $LIBGDKPIXBUF_CACHE $VENDORED_LIBGDKPIXBUF
-else
-  echo "-----> Fetching and caching libgdkpixbuf ($LIBGDKPIXBUF_PACKAGE_ETAG)"
-  mkdir -p $VENDORED_LIBGDKPIXBUF
-  curl $LIBGDKPIXBUF_PACKAGE -o - | tar xJf - -C $VENDORED_LIBGDKPIXBUF
-  mkdir -p $CACHE_DIR
-  cp -a $VENDORED_LIBGDKPIXBUF $LIBGDKPIXBUF_CACHE
-fi
-
-cd $VENDORED_LIBGDKPIXBUF/$LIBGDKPIXBUF_DIRNAME
-CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./configure --prefix=$VENDORED_LIBGDKPIXBUF --with-pic --enable-static --disable-shared
-make -j5
-make install
-cd ..
-rm -fr $LIBGDKPIXBUF_DIRNAME
-export LD_RUN_PATH="$VENDORED_LIBGDKPIXBUF/lib:$LD_RUN_PATH"
-export LD_LIBRARY_PATH="$LD_RUN_PATH"
-export PKG_CONFIG_PATH="$VENDORED_LIBGDKPIXBUF/lib/pkgconfig:$PKG_CONFIG_PATH"
-### End libgdkpixbuf stuff
-
-### fontconfig is required for libcairo
-if [[ "Darwin" == "$(uname)" ]]
-then
-  VENDORED_FONTCONFIG="$HOME/Code/heroku-buildpack-fontconfig/vendor/fontconfig" # Just for my local laptop testing
-else
-  VENDORED_FONTCONFIG="/app/vendor/fontconfig"
-fi
-
-# fetch and cache the source tar ball
-FONTCONFIG_PACKAGE="http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.11.0.tar.bz2"
-FONTCONFIG_PACKAGE_ETAG=$(curl -s --head "$FONTCONFIG_PACKAGE" | grep -Ei '^etag' | sed -r 's/^etag|[^a-zA-Z0-9]+//gi')
-FONTCONFIG_CACHE="$CACHE_DIR/fontconfig_$FONTCONFIG_PACKAGE_ETAG";
-FONTCONFIG_DIRNAME="fontconfig-2.11.0"
-
-if [ -d "$FONTCONFIG_CACHE" ]; then
-  echo "-----> Reusing cached fontconfig ($FONTCONFIG_PACKAGE_ETAG)"
-  cp -a $FONTCONFIG_CACHE $VENDORED_FONTCONFIG
-else
-  echo "-----> Fetching and caching fontconfig ($FONTCONFIG_PACKAGE_ETAG)"
-  mkdir -p $VENDORED_FONTCONFIG
-  curl $FONTCONFIG_PACKAGE -o - | tar xjf - -C $VENDORED_FONTCONFIG
-  mkdir -p $CACHE_DIR
-  cp -a $VENDORED_FONTCONFIG $FONTCONFIG_CACHE
-fi
-
-cd $VENDORED_FONTCONFIG/$FONTCONFIG_DIRNAME
-CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./configure --prefix=$VENDORED_FONTCONFIG --with-pic --enable-static --disable-shared
-make -j5
-make install
-cd ..
-rm -fr $FONTCONFIG_DIRNAME
-export LD_RUN_PATH="$VENDORED_FONTCONFIG/lib:$LD_RUN_PATH"
-export LD_LIBRARY_PATH="$LD_RUN_PATH"
-export PKG_CONFIG_PATH="$VENDORED_FONTCONFIG/lib/pkgconfig:$PKG_CONFIG_PATH"
-### End fontconfig stuff
-
-### libpoppler is required for libcairo
-if [[ "Darwin" == "$(uname)" ]]
-then
-  VENDORED_LIBPOPPLER="$HOME/Code/heroku-buildpack-libpoppler/vendor/libpoppler" # Just for my local laptop testing
-else
-  VENDORED_LIBPOPPLER="/app/vendor/libpoppler"
-fi
-
-# fetch and cache the source tar ball
-LIBPOPPLER_PACKAGE="http://poppler.freedesktop.org/poppler-0.24.4.tar.xz"
-LIBPOPPLER_PACKAGE_ETAG=$(curl -s --head "$LIBPOPPLER_PACKAGE" | grep -Ei '^etag' | sed -r 's/^etag|[^a-zA-Z0-9]+//gi')
-LIBPOPPLER_CACHE="$CACHE_DIR/libpoppler_$LIBPOPPLER_PACKAGE_ETAG";
-LIBPOPPLER_DIRNAME="poppler-0.24.4"
-
-if [ -d "$LIBPOPPLER_CACHE" ]; then
-  echo "-----> Reusing cached libpoppler ($LIBPOPPLER_PACKAGE_ETAG)"
-  cp -a $LIBPOPPLER_CACHE $VENDORED_LIBPOPPLER
-else
-  echo "-----> Fetching and caching libpoppler ($LIBPOPPLER_PACKAGE_ETAG)"
-  mkdir -p $VENDORED_LIBPOPPLER
-  curl $LIBPOPPLER_PACKAGE -o - | tar xJf - -C $VENDORED_LIBPOPPLER
-  mkdir -p $CACHE_DIR
-  cp -a $VENDORED_LIBPOPPLER $LIBPOPPLER_CACHE
-fi
-
-cd $VENDORED_LIBPOPPLER/$LIBPOPPLER_DIRNAME
-CFLAGS='-fPIC -Wall -g -O2' CXXFLAGS='-fPIC -Wall -g -O2' png_CFLAGS='-fPIC -Wall -g -O2' ./configure --prefix=$VENDORED_LIBPOPPLER --with-pic --enable-static --disable-shared
-make -j5
-make install
-cd ..
-rm -fr $LIBPOPPLER_DIRNAME
-export LD_RUN_PATH="$VENDORED_LIBPOPPLER/lib:$LD_RUN_PATH"
-export LD_LIBRARY_PATH="$LD_RUN_PATH"
-export PKG_CONFIG_PATH="$VENDORED_LIBPOPPLER/lib/pkgconfig:$PKG_CONFIG_PATH"
-### End libpoppler stuff
-
 echo "-----> Building runtime environment"
 cd $BUILD_DR
 mkdir -p .profile.d
-echo "export VENDORED_LIBFFI=\"\$VENDORED_LIBFFI\"" > .profile.d/libpoppler.sh
-echo "export VENDORED_GLIB=\"\$VENDORED_GLIB\"" >> .profile.d/libpoppler.sh
-echo "export VENDORED_FONTCONFIG=\"$VENDORED_FONTCONFIG\"" >> .profile.d/libpoppler.sh
-echo "export VENDORED_LIBGDKPIXBUF=\"$VENDORED_LIBGDKPIXBUF\"" >> .profile.d/libpoppler.sh
-echo "export VENDORED_LIBPOPPLER=\"$VENDORED_LIBPOPPLER\"" >> .profile.d/libpoppler.sh
-echo "export PATH=\"/app/vendor/local:\$VENDORED_LIBFFI/bin:\$VENDORED_GLIB/bin:\$VENDORED_LIBGDKPIXBUF/bin:\$VENDORED_FONTCONFIG/bin:\$VENDORED_LIBPOPPLER/bin:\$PATH\"" >> .profile.d/libpoppler.sh
-echo "export LD_RUN_PATH=\"/app/vendor/local/lib:\$VENDORED_LIBFFI/lib:\$VENDORED_GLIB/lib:\$VENDORED_LIBGDKPIXBUF/lib:\$VENDORED_FONTCONFIG/lib:\$VENDORED_LIBPOPPLER/lib:\$LD_RUN_PATH\"" >> .profile.d/libpoppler.sh
-echo "export LD_LIBRARY_PATH=\"/app/vendor/local/lib:\$VENDORED_LIBFFI/lib:\$VENDORED_GLIB/lib:\$VENDORED_LIBGDKPIXBUF/lib:\$VENDORED_FONTCONFIG/lib:\$VENDORED_LIBPOPPLER/lib:\$LD_LIBRARY_PATH\"" >> .profile.d/libpoppler.sh
-echo "export PKG_CONFIG_PATH=\"/app/vendor/local/lib/pkgconfig:\$VENDORED_LIBFFI/lib/pkgconfig:\$VENDORED_GLIB/lib/pkgconfig:\$VENDORED_LIBGDKPIXBUF/lib/pkgconfig:\$VENDORED_FONTCONFIG/lib/pkgconfig:\$VENDORED_LIBPOPPLER/lib/pkgconfig:\$PKG_CONFIG_PATH\"" >> .profile.d/libpoppler.sh
+echo "export PATH=\"/app/vendor/local:\$PATH\"" > .profile.d/libpoppler.sh
+echo "export LD_RUN_PATH=\"/app/vendor/local/lib:\$LD_RUN_PATH\"" >> .profile.d/libpoppler.sh
+echo "export LD_LIBRARY_PATH=\"/app/vendor/local/lib:\$LD_LIBRARY_PATH\"" >> .profile.d/libpoppler.sh
+echo "export PKG_CONFIG_PATH=\"/app/vendor/local/lib/pkgconfig:\$PKG_CONFIG_PATH\"" >> .profile.d/libpoppler.sh
 cat .profile.d/libpoppler.sh
